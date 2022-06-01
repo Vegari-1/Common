@@ -1,0 +1,72 @@
+version: "3.9"
+services:
+  auth-service:
+    image: auth-service
+    build:
+     context: ./AuthService/AuthService
+    ports:
+      - "5001:5001"
+    environment:
+      - ASPNETCORE_URLS=http://+:5001
+
+  message-service:
+    image: message-service
+    build:
+     context: ./MessageService/MessageService
+    ports:
+      - "5002:5002"
+    environment:
+      - ASPNETCORE_URLS=http://+:5002
+
+  profile-service:
+    image: profile-service
+    build:
+     context: ./ProfileService/ProfileService
+    ports:
+      - "5003:5003"
+    environment:
+      - ASPNETCORE_URLS=http://+:5003
+
+  post-service:
+      image: post-service
+      build:
+        context: ./PostService/PostService
+      restart: always
+      ports:
+        - "5004:5004"
+      environment:
+        - ASPNETCORE_URLS=http://+:5004
+
+  notification-service:
+    image: notification-service
+    build:
+     context: ./NotificationService/NotificationService
+    ports:
+      - "5005:5005"
+    environment:
+      - ASPNETCORE_URLS=http://+:5005
+
+  job-offer-service:
+    image: job-offer-service
+    build:
+     context: ./JobOfferService/JobOfferService
+    ports:
+      - "5006:5006"
+    environment:
+      - ASPNETCORE_URLS=http://+:5006
+
+      # api-gateway:
+  #   image: api-gateway
+  #   build:
+  #    context: ./ApiGateway/ApiGateway
+  #   ports:
+  #     - "5000:5000"
+  #   environment:
+  #     - ASPNETCORE_URLS=http://+:5000
+  
+
+
+
+
+    
+
