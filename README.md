@@ -6,6 +6,7 @@ A repository for storing shared data and documentation
 ### Table of Contents
 
 -   [How to run a docker-compose](#how_to_run_a_docker-compose)
+-   [Monitoring - installation and running](#monitoring)
 
 ---
 
@@ -27,6 +28,16 @@ Ports on which services run:
 * Post service: [5004](http://localhost:5004)
 * Notification service: [5005](http://localhost:5005)
 * Job offer service: [5006](http://localhost:5006)
+
+
+## Monitoring
+
+* To install Loki driver run the command: `docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions`
+* To check if plugin is installed run the command: `docker plugin ls` 
+
+* Position yourself in the monitoring folder and run the command `docker compose up`
+* After that, you need to run the following command in a separate terminal: `docker network inspect monitoring`, and from the received list of IP addresses, you need     to find the IP address under the name *monitoring_fluent-bit_1*. That IP address needs to be copied into the docker-compose of all services under the fluentd-address   item. 
+
 
 
 
