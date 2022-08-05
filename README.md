@@ -12,9 +12,9 @@ A repository for storing shared data and documentation
 
 ## How to run a docker-compose
 
-* First, it is necessary to create a folder locally in which all microservices will be located
-* After cloning all microservices, it is necessary to add `docker-compose.yml` file to the newly created folder
-* Open the terminal and position yourself in the newly created folder
+* First, it is necessary to create a folder locally in which all microservices will be located.
+* After cloning all microservices, it is necessary to add `docker-compose.yml`, `.env` and `.dockerignore` files and `monitoring` and `sql` folders to the newly created folder.
+* Open the terminal and position yourself in the newly created folder.
 * Run the command: 
 
 ```
@@ -36,9 +36,7 @@ Ports on which services run:
 * To check if plugin is installed run the command: `docker plugin ls` 
 
 * Position yourself in the monitoring folder and run the command `docker compose up`
-* After that, you need to run the following command in a separate terminal: `docker network inspect monitoring`, and from the received list of IP addresses, you need     to find the IP address under the name *monitoring_fluent-bit_1*. That IP address needs to be copied into the docker-compose of all services under the fluentd-address   item. 
-
-
+* After that, you need to run the following command in a separate terminal: `docker network inspect monitoring`, and from the received list of IP addresses, you need     to find the IP address under the name *monitoring_fluent-bit_1*. That IP address needs to be copied into the .env file under the name `FLUENT_BIT_ADDRESS`.
 
 
 
