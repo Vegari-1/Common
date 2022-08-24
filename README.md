@@ -22,6 +22,7 @@ docker-compose up
 ```
 
 Ports on which services run:
+* API Gateway: [5000](http://localhost:5000)
 * Auth service: [5001](http://localhost:5001)
 * Message service: [5002](http://localhost:5002)
 * Profile service: [5003](http://localhost:5003)
