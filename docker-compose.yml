@@ -7,126 +7,128 @@ x-logging: &fluent-bit
 
 services:
   api-gateway:
+    # check if image should be prefixed by docker hub repo
     image: api-gateway
     build:
       context: ./ApiGateway/ApiGateway
     ports:
-      - "${API_GATEWAY_PORT}:${API_GATEWAY_PORT}"
+      - "${API_GATEWAY_PORT}:80"
     environment:
       ASPNETCORE_URLS: http://+:${API_GATEWAY_PORT}
-      ${PGADMIN_CONNECTION_STRING_NAME}: ${PGADMIN_CONNECTION_STRING_VALUE}
+      DB_HOST: ${POSTGRES_CONNECTION_STRING_VALUE}
     networks:
       - servers
       - monitoring
     logging: *fluent-bit
     depends_on:
-      - jaeger
-      - db
+      db:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
   
   auth-service:
     image: auth-service
     build:
       context: ./AuthService/AuthService
-    ports:
-      - "${AUTH_SERVICE_PORT}:${AUTH_SERVICE_PORT}"
     environment:
       ASPNETCORE_URLS: http://+:${AUTH_SERVICE_PORT}
-      ${PGADMIN_CONNECTION_STRING_NAME}: ${PGADMIN_CONNECTION_STRING_VALUE}
+      DB_HOST: ${POSTGRES_CONNECTION_STRING_VALUE}
     networks:
       - servers
       - monitoring
     logging: *fluent-bit
     depends_on:
-      - jaeger
-      - db
+      db:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
 
   message-service:
     image: message-service
     build:
      context: ./MessageService/MessageService
-    ports:
-      - "${MESSAGE_SERVICE_PORT}:${MESSAGE_SERVICE_PORT}"
     environment:
       ASPNETCORE_URLS: http://+:${MESSAGE_SERVICE_PORT}
-      ${PGADMIN_CONNECTION_STRING_NAME}: ${PGADMIN_CONNECTION_STRING_VALUE}
+      DB_HOST: ${POSTGRES_CONNECTION_STRING_VALUE}
     networks:
       - servers
       - monitoring
     logging: *fluent-bit
     depends_on:
-      - jaeger
-      - db
+      db:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
 
   profile-service:
     image: profile-service
     build:
       context: ./ProfileService/ProfileService
-    ports:
-      - "${PROFILE_SERVICE_PORT}:${PROFILE_SERVICE_PORT}"
     environment:
       ASPNETCORE_URLS: http://+:${PROFILE_SERVICE_PORT}
-      ${PGADMIN_CONNECTION_STRING_NAME}: ${PGADMIN_CONNECTION_STRING_VALUE}
+      DB_HOST: ${POSTGRES_CONNECTION_STRING_VALUE}
     networks:
       - servers
       - monitoring
     logging: *fluent-bit
     depends_on:
-      - jaeger
-      - db
+      db:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
 
   post-service:
     image: post-service
     build:
       context: ./PostService/PostService
     restart: always
-    ports:
-      - "${POST_SERVICE_PORT}:${POST_SERVICE_PORT}"
     environment:
       JAEGER_AGENT_HOST: jeager
       ASPNETCORE_URLS: http://+:${POST_SERVICE_PORT}
-      ${PGADMIN_CONNECTION_STRING_NAME}: ${PGADMIN_CONNECTION_STRING_VALUE}
+      DB_HOST: ${POSTGRES_CONNECTION_STRING_VALUE}
     networks:
       - servers
       - monitoring
     logging: *fluent-bit
     depends_on:
-      - jaeger
-      - db
-      #   condition: service_healthy
+      db:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
 
   notification-service:
     image: notification-service
     build:
       context: ./NotificationService/NotificationService
-    ports:
-      - "${NOTIFICATION_SERVICE_PORT}:${NOTIFICATION_SERVICE_PORT}"
     environment:
       ASPNETCORE_URLS: http://+:${NOTIFICATION_SERVICE_PORT}
-      ${PGADMIN_CONNECTION_STRING_NAME}: ${PGADMIN_CONNECTION_STRING_VALUE}
+      DB_HOST: ${POSTGRES_CONNECTION_STRING_VALUE}
     networks:
       - servers
       - monitoring
     logging: *fluent-bit
     depends_on:
-      - jaeger
-      - db
+      db:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
 
   job-offer-service:
     image: job-offer-service
     build:
       context: ./JobOfferService/JobOfferService
-    ports:
-      - "${JOB_OFFER_SERVICE_PORT}:${JOB_OFFER_SERVICE_PORT}"
     environment:
       ASPNETCORE_URLS: http://+:${JOB_OFFER_SERVICE_PORT}
-      ${PGADMIN_CONNECTION_STRING_NAME}: ${PGADMIN_CONNECTION_STRING_VALUE}
+      DB_HOST: ${POSTGRES_CONNECTION_STRING_VALUE}
     networks:
       - servers
       - monitoring
     logging: *fluent-bit
     depends_on:
-      - jaeger
-      - db
+      db:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
 
   db:
     image: postgres
@@ -136,23 +138,19 @@ services:
        - monitoring
     restart: always
     user: postgres
-    ports:
-      - "${POSTGRES_DB_PORT}:${POSTGRES_DB_PORT}"
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
     healthcheck:
-      test: pg_isready -U user -d admin
+      test: pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}
       retries: 3
       interval: 5s
       timeout: 5s
     volumes:
       - local_pgdata:/var/lib/postgresql/data
-      # copy the sql script to create tables
-      - ./sql/create_tables.sql:/docker-entrypoint-initdb.d/create_tables.sql
       # copy the sql script to fill tables
-      - ./sql/fill_tables.sql:/docker-entrypoint-initdb.d/fill_tables.sql
+      #- ./sql/fill_tables.sql:/docker-entrypoint-initdb.d/fill_tables.sql
     logging: *fluent-bit
     
   pgadmin:
@@ -171,7 +169,8 @@ services:
       - pgadmin-data:/var/lib/pgadmin
     logging: *fluent-bit
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
 volumes:
   local_pgdata:
