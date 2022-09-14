@@ -1,44 +1,44 @@
 version: "${VERSION}"
 
-x-logging: &fluent-bit
-  driver: fluentd
-  options:
-    fluentd-address: ${FLUENT_BIT_ADDRESS}:24224
-
 services:
-  profile-service:
-    image: evaj10/profile-service
+  api-gateway:
+    build:
+      context: ./ApiGateway/ApiGateway
+      dockerfile: Dockerfile
     ports:
-      # - "${PROFILE_SERVICE_PORT}:80"
-      - "${PROFILE_SERVICE_PORT}:${PROFILE_SERVICE_PORT}"
+      - "${API_GATEWAY_PORT}:${API_GATEWAY_PORT}"
+    environment:
+      ASPNETCORE_URLS: http://+:${API_GATEWAY_PORT}
+      DB_HOST: ${POSTGRES_CONNECTION_STRING_VALUE}
+    networks:
+      - servers
+    depends_on:
+      db:
+        condition: service_healthy
+  
+  auth-service:
+    build:
+      context: ./AuthService/AuthService
+      dockerfile: Dockerfile
+    environment:
+      ASPNETCORE_URLS: http://+:${AUTH_SERVICE_PORT}
+      DB_HOST: ${POSTGRES_CONNECTION_STRING_VALUE}
+      PROFILE_SERVICE_URL: http://profile-service:${PROFILE_SERVICE_PORT}
+    networks:
+      - servers
+    depends_on:
+      db:
+        condition: service_healthy
+
+  profile-service:
+    build:
+      context: ./ProfileService/ProfileService
+      dockerfile: Dockerfile
     environment:
       ASPNETCORE_URLS: http://+:${PROFILE_SERVICE_PORT}
       DB_HOST: ${POSTGRES_CONNECTION_STRING_VALUE}
     networks:
       - servers
-      - monitoring
-    logging: *fluent-bit
-    depends_on:
-      db:
-        condition: service_healthy
-      nats:
-        condition: service_started
-
-  post-service:
-    # build:
-    #   context: .././PostService/PostService
-    #   dockerfile: Dockerfile
-    image: evaj10/post-service:1.0.0-develop.5
-    ports:
-      # - "${POST_SERVICE_PORT}:80"
-      - "${POST_SERVICE_PORT}:${POST_SERVICE_PORT}"
-    environment:
-      ASPNETCORE_URLS: http://+:${POST_SERVICE_PORT}
-      DB_HOST: ${POSTGRES_CONNECTION_STRING_VALUE}
-    networks:
-      - servers
-      - monitoring
-    logging: *fluent-bit
     depends_on:
       db:
         condition: service_healthy
@@ -98,5 +98,3 @@ networks:
   servers:
     name: servers
     driver: bridge
-  monitoring:
-    external: true
