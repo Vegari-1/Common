@@ -29,6 +29,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      nats:
+        condition: service_started
 
   profile-service:
     build:
@@ -36,6 +38,37 @@ services:
       dockerfile: Dockerfile
     environment:
       ASPNETCORE_URLS: http://+:${PROFILE_SERVICE_PORT}
+      DB_HOST: ${POSTGRES_CONNECTION_STRING_VALUE}
+      JOB_OFFER_SERVICE_URL: http://job-offer-service:${JOB_OFFER_SERVICE_PORT}
+    networks:
+      - servers
+    depends_on:
+      db:
+        condition: service_healthy
+      nats:
+        condition: service_started
+        
+  event-service:
+    build:
+      context: ./EventService/EventService
+      dockerfile: Dockerfile
+    environment:
+      ASPNETCORE_URLS: http://+:${EVENT_SERVICE_PORT}
+      DB_HOST: ${POSTGRES_CONNECTION_STRING_VALUE}
+    networks:
+      - servers
+    depends_on:
+      db:
+        condition: service_healthy
+      nats:
+        condition: service_started
+
+  notification-service:
+    build:
+      context: ./NotificationService/NotificationService
+      dockerfile: Dockerfile
+    environment:
+      ASPNETCORE_URLS: http://+:${NOTIFICATION_SERVICE_PORT}
       DB_HOST: ${POSTGRES_CONNECTION_STRING_VALUE}
     networks:
       - servers
