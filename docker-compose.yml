@@ -6,64 +6,11 @@ x-logging: &fluent-bit
     fluentd-address: ${FLUENT_BIT_ADDRESS}:24224
 
 services:
-  api-gateway:
-    # check if image should be prefixed by docker hub repo
-    image: api-gateway
-    build:
-      context: ./ApiGateway/ApiGateway
-    ports:
-      - "${API_GATEWAY_PORT}:80"
-    environment:
-      ASPNETCORE_URLS: http://+:${API_GATEWAY_PORT}
-      DB_HOST: ${POSTGRES_CONNECTION_STRING_VALUE}
-    networks:
-      - servers
-      - monitoring
-    logging: *fluent-bit
-    depends_on:
-      db:
-        condition: service_healthy
-      jaeger:
-        condition: service_started
-  
-  auth-service:
-    image: auth-service
-    build:
-      context: ./AuthService/AuthService
-    environment:
-      ASPNETCORE_URLS: http://+:${AUTH_SERVICE_PORT}
-      DB_HOST: ${POSTGRES_CONNECTION_STRING_VALUE}
-    networks:
-      - servers
-      - monitoring
-    logging: *fluent-bit
-    depends_on:
-      db:
-        condition: service_healthy
-      jaeger:
-        condition: service_started
-
-  message-service:
-    image: message-service
-    build:
-     context: ./MessageService/MessageService
-    environment:
-      ASPNETCORE_URLS: http://+:${MESSAGE_SERVICE_PORT}
-      DB_HOST: ${POSTGRES_CONNECTION_STRING_VALUE}
-    networks:
-      - servers
-      - monitoring
-    logging: *fluent-bit
-    depends_on:
-      db:
-        condition: service_healthy
-      jaeger:
-        condition: service_started
-
   profile-service:
-    image: profile-service
-    build:
-      context: ./ProfileService/ProfileService
+    image: evaj10/profile-service
+    ports:
+      # - "${PROFILE_SERVICE_PORT}:80"
+      - "${PROFILE_SERVICE_PORT}:${PROFILE_SERVICE_PORT}"
     environment:
       ASPNETCORE_URLS: http://+:${PROFILE_SERVICE_PORT}
       DB_HOST: ${POSTGRES_CONNECTION_STRING_VALUE}
@@ -74,16 +21,18 @@ services:
     depends_on:
       db:
         condition: service_healthy
-      jaeger:
+      nats:
         condition: service_started
 
   post-service:
-    image: post-service
-    build:
-      context: ./PostService/PostService
-    restart: always
+    # build:
+    #   context: .././PostService/PostService
+    #   dockerfile: Dockerfile
+    image: evaj10/post-service:1.0.0-develop.5
+    ports:
+      # - "${POST_SERVICE_PORT}:80"
+      - "${POST_SERVICE_PORT}:${POST_SERVICE_PORT}"
     environment:
-      JAEGER_AGENT_HOST: jeager
       ASPNETCORE_URLS: http://+:${POST_SERVICE_PORT}
       DB_HOST: ${POSTGRES_CONNECTION_STRING_VALUE}
     networks:
@@ -93,51 +42,25 @@ services:
     depends_on:
       db:
         condition: service_healthy
-      jaeger:
+      nats:
         condition: service_started
 
-  notification-service:
-    image: notification-service
-    build:
-      context: ./NotificationService/NotificationService
-    environment:
-      ASPNETCORE_URLS: http://+:${NOTIFICATION_SERVICE_PORT}
-      DB_HOST: ${POSTGRES_CONNECTION_STRING_VALUE}
+  nats:
+    image: 'nats:2'
+    expose:
+      - "4222"
+    ports:
+      - "8222:8222"
+      - "4222:4222"
     networks:
       - servers
-      - monitoring
-    logging: *fluent-bit
-    depends_on:
-      db:
-        condition: service_healthy
-      jaeger:
-        condition: service_started
-
-  job-offer-service:
-    image: job-offer-service
-    build:
-      context: ./JobOfferService/JobOfferService
-    environment:
-      ASPNETCORE_URLS: http://+:${JOB_OFFER_SERVICE_PORT}
-      DB_HOST: ${POSTGRES_CONNECTION_STRING_VALUE}
-    networks:
-      - servers
-      - monitoring
-    logging: *fluent-bit
-    depends_on:
-      db:
-        condition: service_healthy
-      jaeger:
-        condition: service_started
 
   db:
     image: postgres
     container_name: local_pgdb
     networks:
        - servers
-       - monitoring
     restart: always
-    user: postgres
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -149,16 +72,12 @@ services:
       timeout: 5s
     volumes:
       - local_pgdata:/var/lib/postgresql/data
-      # copy the sql script to fill tables
-      #- ./sql/fill_tables.sql:/docker-entrypoint-initdb.d/fill_tables.sql
-    logging: *fluent-bit
-    
+   
   pgadmin:
     image: dpage/pgadmin4
     container_name: pgadmin4_container
     networks:
       - servers
-      - monitoring
     restart: always
     ports:
       - "${PG_ADMIN_PORT}:80"
@@ -167,7 +86,6 @@ services:
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_ROOT_PASSWORD}
     volumes:
       - pgadmin-data:/var/lib/pgadmin
-    logging: *fluent-bit
     depends_on:
       db:
         condition: service_healthy
