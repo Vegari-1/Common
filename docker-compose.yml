@@ -70,8 +70,25 @@ services:
     expose:
       - ${JOB_OFFER_SERVICE_PORT}
     environment:
-      "MongoDbSettings:ConnectionString": "mongodb://mongo:mongo@mongo:27017"
+      "MongoDbSettings:ConnectionString": "mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongo:27017"
       ASPNETCORE_URLS: http://+:${JOB_OFFER_SERVICE_PORT}
+    networks:
+      - servers
+    depends_on:
+      mongo:
+        condition: service_healthy
+      nats:
+        condition: service_started
+
+  message-service:
+    build:
+      context: ./MessageService/MessageService
+      dockerfile: Dockerfile
+    expose:
+      - ${MESSAGE_SERVICE_PORT}
+    environment:
+      "MongoDbSettings:ConnectionString": "mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongo:27017"
+      ASPNETCORE_URLS: http://+:${MESSAGE_SERVICE_PORT}
     networks:
       - servers
     depends_on:
